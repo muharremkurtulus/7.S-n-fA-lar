@@ -1,0 +1,510 @@
+```react
+import React, { useState, useEffect } from 'react';
+import { Play, ArrowRight, Check, X, Lightbulb, Trophy, RotateCcw, Target, Sparkles } from 'lucide-react';
+
+// --- Geometri Temalı Arka Plan ---
+const GridBackground = () => (
+  <svg className="absolute inset-0 w-full h-full -z-10 opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0f172a" strokeWidth="1"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#grid)" />
+  </svg>
+);
+
+// --- Okunabilir Açı Metni Bileşeni (Kritik Düzeltme) ---
+// Yazıların çizgilerle karışmasını önler, beyaz bir fon ile yazıyı öne çıkarır.
+const AngleText = ({ x, y, children, color = "#ef4444" }) => (
+  <g>
+    <circle cx={x} cy={y} r="16" fill="white" fillOpacity="0.85" className="shadow-sm" />
+    <text x={x} y={y} fontSize="17" fill={color} fontWeight="900" textAnchor="middle" dominantBaseline="central">
+      {children}
+    </text>
+  </g>
+);
+
+// --- Geometrik Çizim Bileşenleri (SVG) ---
+const SVGDefs = () => (
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+    </marker>
+  </defs>
+);
+
+const D1D2Lines = () => (
+  <>
+    <line x1="20" y1="60" x2="280" y2="60" stroke="#334155" strokeWidth="3" strokeLinecap="round" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
+    <text x="285" y="55" fontSize="16" fill="#334155" fontWeight="bold">d₁</text>
+    
+    <line x1="20" y1="180" x2="280" y2="180" stroke="#334155" strokeWidth="3" strokeLinecap="round" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
+    <text x="285" y="175" fontSize="16" fill="#334155" fontWeight="bold">d₂</text>
+    
+    <text x="30" y="40" fontSize="14" fill="#64748b" className="font-bold">d₁ // d₂</text>
+  </>
+);
+
+// Z Kuralı: Gerçekçi dar açılar. Yazılar tam boşlukta.
+const ZRuleSVG = ({ a, b }) => (
+  <svg viewBox="0 0 300 240" className="w-full h-full drop-shadow-sm">
+    <SVGDefs />
+    <D1D2Lines />
+    <path d="M 230 60 L 70 180" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" />
+    
+    {/* Üst Açı (Sola ve aşağı bakıyor) */}
+    <path d="M 190 60 A 40 40 0 0 0 206 83" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={175} y={85}>{a}</AngleText>
+    
+    {/* Alt Açı (Sağa ve yukarı bakıyor) */}
+    <path d="M 110 180 A 40 40 0 0 0 94 157" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={125} y={155}>{b}</AngleText>
+  </svg>
+);
+
+// U Kuralı: Biri geniş, biri dar açı modeli.
+const URuleSVG = ({ a, b }) => (
+  <svg viewBox="0 0 300 240" className="w-full h-full drop-shadow-sm">
+    <SVGDefs />
+    <D1D2Lines />
+    <path d="M 140 60 L 230 180" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" />
+    
+    {/* Üst Açı (Geniş açı, Sola bakıyor) */}
+    <path d="M 100 60 A 40 40 0 0 0 162 88" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={125} y={95} color="#ef4444">{a}</AngleText>
+    
+    {/* Alt Açı (Dar açı, Sola bakıyor) */}
+    <path d="M 190 180 A 40 40 0 0 1 206 148" fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={165} y={165} color="#f59e0b">{b}</AngleText>
+  </svg>
+);
+
+// M Kuralı: Net bir şekilde sağa ve sola bakan açılar.
+const MRuleSVG = ({ a, b, c }) => (
+  <svg viewBox="0 0 300 240" className="w-full h-full drop-shadow-sm">
+    <SVGDefs />
+    <D1D2Lines />
+    <path d="M 80 60 L 180 120 L 80 180" stroke="#3b82f6" strokeWidth="4" strokeLinejoin="round" fill="none" />
+    
+    {/* Üst Açı (Sağa bakıyor) */}
+    <path d="M 120 60 A 40 40 0 0 1 112 79" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={135} y={85}>{a}</AngleText>
+
+    {/* Alt Açı (Sağa bakıyor) */}
+    <path d="M 120 180 A 40 40 0 0 0 112 161" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={135} y={155}>{b}</AngleText>
+
+    {/* Orta Açı (Sola bakıyor) - X Harfi tam solda */}
+    <path d="M 146 100 A 40 40 0 0 0 146 140" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={125} y={120} color="#10b981">{c}</AngleText>
+  </svg>
+);
+
+// Kalem Ucu Kuralı: 3 adet geniş açı. Yazılar merkezden dışa doğru.
+const KalemUcuSVG = ({ a, b, c }) => (
+  <svg viewBox="0 0 300 240" className="w-full h-full drop-shadow-sm">
+    <SVGDefs />
+    <D1D2Lines />
+    {/* Çizgiler sağa doğru bir kalem ucu (sivri kısım) oluşturur */}
+    <path d="M 140 60 L 240 120 L 140 180" stroke="#3b82f6" strokeWidth="4" strokeLinejoin="round" fill="none" />
+    
+    {/* Üst Geniş Açı (İçeride, sağa-aşağı bakıyor) */}
+    <path d="M 100 60 A 40 40 0 0 0 174 80" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={135} y={90}>{a}</AngleText>
+
+    {/* Orta Geniş Açı (İçeride, sola bakıyor) */}
+    <path d="M 205 100 A 40 40 0 0 0 205 140" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={180} y={120}>{b}</AngleText>
+
+    {/* Alt Geniş Açı (İçeride, sağa-yukarı bakıyor) */}
+    <path d="M 174 160 A 40 40 0 0 0 100 180" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={135} y={150}>{c}</AngleText>
+  </svg>
+);
+
+// Zigzag Kuralı: Keskin kırılmalar, iç içe geçmeyen açılar.
+const ZigzagSVG = ({ a, b, c, d }) => (
+  <svg viewBox="0 0 300 240" className="w-full h-full drop-shadow-sm">
+    <SVGDefs />
+    <D1D2Lines />
+    <path d="M 70 60 L 150 95 L 100 145 L 190 180" stroke="#3b82f6" strokeWidth="4" strokeLinejoin="round" fill="none" />
+    
+    {/* a (Sağa bakıyor) */}
+    <path d="M 100 60 A 30 30 0 0 1 97 73" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={115} y={75}>{a}</AngleText>
+
+    {/* b (Sola bakıyor) */}
+    <path d="M 125 83 A 30 30 0 0 0 128 116" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={105} y={100} color="#10b981">{b}</AngleText>
+
+    {/* c (Sağa bakıyor) */}
+    <path d="M 124 122 A 30 30 0 0 1 120 157" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={140} y={140}>{c}</AngleText>
+    
+    {/* d (Sola bakıyor) */}
+    <path d="M 160 180 A 30 30 0 0 1 167 165" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
+    <AngleText x={145} y={175} color="#10b981">{d}</AngleText>
+  </svg>
+);
+
+// --- Veri Kümesi (Kurallar ve Mantıklı/Uyumlu Sorular) ---
+const rulesData = [
+  {
+    id: 'z-kurali',
+    name: 'Z Kuralı',
+    formula: 'a = b',
+    description: 'Paralel iki doğru arasında "Z" harfi oluşturan iç ters açıların ölçüleri birbirine EŞİTTİR.',
+    SvgComponent: ZRuleSVG,
+    introProps: { a: 'a', b: 'b' },
+    questions: [
+      { q: "Z kuralına göre, x açısı kaç derecedir?", props: { a: "50°", b: "x" }, options: [40, 50, 130, 60], correct: 50 },
+      { q: "Paralel doğrular arasındaki x açısını bulunuz.", props: { a: "72°", b: "x" }, options: [18, 108, 72, 90], correct: 72 },
+      { q: "İç ters açılar birbirine eşittir. x kaçtır?", props: { a: "65°", b: "x" }, options: [55, 65, 115, 75], correct: 65 },
+      { q: "Şekildeki verilere göre x açısı kaç derecedir?", props: { a: "48°", b: "x" }, options: [42, 48, 132, 52], correct: 48 },
+      { q: "Z kuralını uygulayarak x'i bulunuz.", props: { a: "81°", b: "x" }, options: [81, 99, 18, 80], correct: 81 }
+    ]
+  },
+  {
+    id: 'u-kurali',
+    name: 'U Kuralı',
+    formula: 'a + b = 180°',
+    description: 'Paralel iki doğru arasında "U" (veya C) harfi oluşturan karşılıklı iki açının toplamı 180°\'dir. Bütünler açılardır.',
+    SvgComponent: URuleSVG,
+    introProps: { a: 'a', b: 'b' },
+    questions: [
+      { q: "U kuralına göre iki açının toplamı 180° olmalıdır. x kaçtır?", props: { a: "110°", b: "x" }, options: [70, 110, 90, 80], correct: 70 },
+      { q: "Bütünler açıların toplamını düşünerek x'i bulunuz.", props: { a: "135°", b: "x" }, options: [35, 45, 135, 55], correct: 45 },
+      { q: "Verilen x açısı kaç derecedir?", props: { a: "100°", b: "x" }, options: [100, 90, 80, 180], correct: 80 },
+      { q: "U kuralı gereği x'in değerini hesaplayınız.", props: { a: "x", b: "75°" }, options: [105, 95, 75, 115], correct: 105 },
+      { q: "Karşılıklı açıların toplamı 180°'dir. x kaçtır?", props: { a: "152°", b: "x" }, options: [28, 38, 152, 48], correct: 28 }
+    ]
+  },
+  {
+    id: 'm-kurali',
+    name: 'M (Kelebek) Kuralı',
+    formula: 'Sola Bakan = Sağa Bakanlar',
+    description: '"M" harfine benzeyen bu şekilde, aynı yöne (örneğin sağa) bakan dar açıların toplamı, zıt yöne (sola) bakan açıya eşittir.',
+    SvgComponent: MRuleSVG,
+    introProps: { a: 'a', b: 'b', c: 'c' },
+    questions: [
+      { q: "Sağa bakan açıların toplamı sola bakan x açısına eşittir. x kaçtır?", props: { a: "40°", b: "50°", c: "x" }, options: [75, 15, 90, 105], correct: 90 },
+      { q: "Sola bakan açı 85° ise, sağa bakan x açısı kaçtır?", props: { a: "45°", b: "x", c: "85°" }, options: [40, 50, 130, 45], correct: 40 },
+      { q: "M kuralına göre ortadaki x açısı kaç derecedir?", props: { a: "35°", b: "35°", c: "x" }, options: [60, 70, 80, 110], correct: 70 },
+      { q: "Eksik olan x açısını hesaplayınız.", props: { a: "x", b: "55°", c: "110°" }, options: [45, 65, 55, 165], correct: 55 },
+      { q: "Kelebek kuralını uygulayarak x'i bulunuz.", props: { a: "28°", b: "42°", c: "x" }, options: [60, 70, 80, 50], correct: 70 }
+    ]
+  },
+  {
+    id: 'kalem-ucu',
+    name: 'Kalem Ucu Kuralı',
+    formula: 'a + b + c = 360°',
+    description: 'Kalem ucuna benzeyen bu şekilde, paralel iki doğru arasında kalan aynı yöne bakan 3 iç açının toplamı daima 360° dir.',
+    SvgComponent: KalemUcuSVG,
+    introProps: { a: 'a', b: 'b', c: 'c' },
+    questions: [
+      { q: "Üç iç açının toplamı 360° olmalıdır. x kaçtır?", props: { a: "140°", b: "120°", c: "x" }, options: [100, 80, 120, 110], correct: 100 },
+      { q: "Kalem ucu kuralına göre x açısını bulunuz.", props: { a: "110°", b: "130°", c: "x" }, options: [100, 120, 130, 140], correct: 120 },
+      { q: "Verilen şekildeki eksik x açısı kaç derecedir?", props: { a: "105°", b: "145°", c: "x" }, options: [90, 100, 110, 120], correct: 110 },
+      { q: "Tüm açılar geniş açıdır. x kaçtır?", props: { a: "135°", b: "115°", c: "x" }, options: [110, 100, 120, 130], correct: 110 },
+      { q: "360°'ye tamamlayarak x'i hesaplayınız.", props: { a: "140°", b: "130°", c: "x" }, options: [90, 80, 100, 110], correct: 90 }
+    ]
+  },
+  {
+    id: 'zigzag',
+    name: 'Zikzak Kuralı',
+    formula: 'Sağa Bakanlar = Sola Bakanlar',
+    description: 'Zikzak kuralında doğrulardaki kırılma noktalarında oluşan açılardan, sağa bakanların toplamı, sola bakanların toplamına eşittir.',
+    SvgComponent: ZigzagSVG,
+    introProps: { a: 'a', b: 'b', c: 'c', d: 'd' },
+    questions: [
+      { q: "Sağa bakanların toplamı, sola bakanlara eşittir. x kaçtır?", props: { a: "x", b: "30°", c: "20°", d: "40°" }, options: [50, 40, 60, 70], correct: 50 },
+      { q: "Zigzag kuralına göre x'i bulunuz.", props: { a: "60°", b: "45°", c: "35°", d: "x" }, options: [50, 60, 40, 70], correct: 50 },
+      { q: "Eksik olan sağa bakan açıyı bulunuz.", props: { a: "40°", b: "55°", c: "x", d: "25°" }, options: [30, 40, 50, 60], correct: 40 },
+      { q: "Sola ve sağa bakan açıları eşitleyerek x'i hesaplayınız.", props: { a: "50°", b: "30°", c: "10°", d: "x" }, options: [20, 30, 40, 50], correct: 30 },
+      { q: "Zigzag kuralını uygulayın. (Sağlar = Sollar)", props: { a: "x", b: "60°", c: "30°", d: "20°" }, options: [40, 50, 60, 70], correct: 50 }
+    ]
+  }
+];
+
+export default function AcilarOyunu() {
+  const [gameState, setGameState] = useState('start'); 
+  const [ruleIndex, setRuleIndex] = useState(0);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [isCorrect, setIsCorrect] = useState(null);
+  const [animateCard, setAnimateCard] = useState(false);
+
+  const currentRule = rulesData[ruleIndex];
+  const currentQuestion = currentRule?.questions[questionIndex];
+  
+  // İlk soruda ipucu göster
+  const showHint = questionIndex === 0; 
+  const totalQuestions = rulesData.length * 5;
+  const currentQNumber = ruleIndex * 5 + questionIndex + 1;
+
+  const triggerAnimation = () => {
+    setAnimateCard(true);
+    setTimeout(() => setAnimateCard(false), 400);
+  };
+
+  const startGame = () => {
+    triggerAnimation();
+    setGameState('intro');
+  };
+
+  const startRuleQuestions = () => {
+    triggerAnimation();
+    setGameState('playing');
+  };
+
+  const handleOptionClick = (option) => {
+    if (selectedOption !== null) return;
+    
+    setSelectedOption(option);
+    const correct = option === currentQuestion.correct;
+    setIsCorrect(correct);
+    
+    if (correct) {
+      setScore(s => s + 10);
+    }
+
+    setTimeout(() => {
+      handleNext();
+    }, 1800);
+  };
+
+  const handleNext = () => {
+    setSelectedOption(null);
+    setIsCorrect(null);
+    triggerAnimation();
+
+    if (questionIndex < 4) {
+      setQuestionIndex(q => q + 1);
+    } else {
+      if (ruleIndex < rulesData.length - 1) {
+        setRuleIndex(r => r + 1);
+        setQuestionIndex(0);
+        setGameState('intro');
+      } else {
+        setGameState('finished');
+      }
+    }
+  };
+
+  const restartGame = () => {
+    triggerAnimation();
+    setRuleIndex(0);
+    setQuestionIndex(0);
+    setScore(0);
+    setGameState('start');
+    setSelectedOption(null);
+    setIsCorrect(null);
+  };
+
+  return (
+    <div className="relative min-h-[100dvh] bg-slate-50 text-slate-800 font-sans p-2 md:p-4 flex flex-col items-center justify-center overflow-x-hidden overflow-y-auto z-0">
+      <GridBackground />
+      
+      {/* Oyun Başlangıç Ekranı */}
+      {gameState === 'start' && (
+        <div className={`max-w-2xl w-full bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 md:p-10 text-center transform transition-all duration-400 ${animateCard ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
+          <div className="w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3 hover:rotate-6 transition-transform">
+            <Target size={48} className="md:w-14 md:h-14" />
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-700 mb-4 md:mb-6">
+            Açıların Kısa Yolları
+          </h1>
+          <p className="text-base md:text-xl text-slate-600 mb-8 leading-relaxed">
+            7. Sınıf Geometri dünyasına hoş geldin! <br className="hidden md:block" />
+            Paralel doğrular arasındaki <span className="font-bold text-blue-600">Z, U, M, Kalem Ucu ve Zikzak</span> kurallarını temiz görsellerle öğren, hafızana kazı ve rekorunu kır.
+          </p>
+          <button 
+            onClick={startGame}
+            className="group relative inline-flex items-center justify-center px-8 md:px-10 py-4 md:py-5 text-lg md:text-xl font-bold text-white transition-all duration-200 bg-blue-600 border border-transparent rounded-full hover:bg-blue-700 shadow-xl hover:shadow-2xl hover:-translate-y-1"
+          >
+            <Play size={24} className="mr-3 group-hover:scale-110 transition-transform" /> Oyuna Başla
+          </button>
+        </div>
+      )}
+
+      {/* Kural Öğrenme Ekranı */}
+      {gameState === 'intro' && currentRule && (
+        <div className={`max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transition-all duration-400 ${animateCard ? 'translate-y-8 opacity-0' : 'translate-y-0 opacity-100'}`}>
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 md:p-8 text-white text-center relative overflow-hidden">
+            <Sparkles className="absolute top-4 right-8 text-blue-300 opacity-50 hidden md:block" size={48} />
+            <span className="inline-block bg-white/20 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase mb-2 shadow-sm">
+              Kural {ruleIndex + 1} / 5
+            </span>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">{currentRule.name}</h2>
+          </div>
+          
+          <div className="p-4 md:p-8">
+            <div className="flex flex-col md:flex-row items-stretch gap-4 md:gap-8 mb-6 md:mb-8">
+              <div className="flex-1 bg-white p-2 md:p-6 rounded-2xl border-2 border-slate-100 shadow-sm flex items-center justify-center h-48 md:h-auto">
+                <currentRule.SvgComponent {...currentRule.introProps} />
+              </div>
+              <div className="flex-1 flex flex-col justify-center gap-4">
+                <div className="bg-amber-50 border-l-4 border-amber-500 p-4 md:p-6 rounded-r-2xl shadow-sm">
+                  <h3 className="text-amber-800 font-bold mb-1 md:mb-2 flex items-center gap-2"><Lightbulb size={18}/> Kuralın Mantığı</h3>
+                  <p className="text-amber-900/80 font-medium text-base md:text-lg leading-relaxed">
+                    {currentRule.description}
+                  </p>
+                </div>
+                <div className="bg-emerald-50 border-2 border-emerald-200 p-4 md:p-6 rounded-2xl text-center shadow-sm relative overflow-hidden">
+                  <span className="text-emerald-700 font-bold mb-1 block uppercase tracking-wider text-xs md:text-sm">Matematiksel İfade</span>
+                  <span className="text-2xl md:text-3xl font-black text-emerald-600 drop-shadow-sm">{currentRule.formula}</span>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={startRuleQuestions}
+              className="w-full bg-slate-800 hover:bg-slate-900 text-white text-lg md:text-xl font-bold py-4 md:py-5 px-8 rounded-2xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 group"
+            >
+              Anladım, Sorulara Geç <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Soru Çözüm Ekranı */}
+      {gameState === 'playing' && currentRule && currentQuestion && (
+        <div className={`max-w-5xl w-full flex flex-col gap-3 md:gap-5 transition-all duration-400 ${animateCard ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
+          
+          {/* Üst Bilgi Barı */}
+          <div className="flex justify-between items-center bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="hidden md:block text-slate-500 font-bold uppercase tracking-wider text-xs">İlerleme</div>
+              <div className="w-24 md:w-48 h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-700 rounded-full"
+                  style={{ width: `${(currentQNumber / totalQuestions) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-sm md:text-base font-black text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">{currentQNumber} / {totalQuestions}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-lg shadow-sm">
+              <Trophy size={18} className="text-yellow-700" /> {score} Puan
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+            {/* Soru Alanı */}
+            <div className="flex-grow bg-white rounded-3xl shadow-xl p-5 md:p-8 border border-slate-100 relative">
+              <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 md:mb-6 leading-tight">{currentQuestion.q}</h3>
+              
+              {/* Temiz SVG Alanı */}
+              <div className="w-full max-w-[16rem] md:max-w-sm mx-auto mb-5 md:mb-8 bg-white p-3 md:p-4 rounded-2xl border-2 border-slate-100 shadow-sm relative">
+                <currentRule.SvgComponent {...currentQuestion.props} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 md:gap-5">
+                {currentQuestion.options.map((opt, i) => {
+                  let btnColor = "bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 shadow-sm hover:border-blue-300";
+                  let animationClass = "";
+                  
+                  if (selectedOption !== null) {
+                    if (opt === currentQuestion.correct) {
+                      btnColor = "bg-emerald-500 text-white border-emerald-600 shadow-lg z-10 scale-105";
+                      animationClass = selectedOption === opt ? "animate-[bounce_0.5s_ease-in-out]" : "";
+                    } else if (opt === selectedOption) {
+                      btnColor = "bg-red-500 text-white border-red-600 opacity-90 scale-95";
+                      animationClass = "animate-[pulse_0.5s_ease-in-out]";
+                    } else {
+                      btnColor = "bg-slate-50 text-slate-400 border-slate-100 opacity-50";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleOptionClick(opt)}
+                      disabled={selectedOption !== null}
+                      className={`relative px-4 py-3 md:py-4 text-2xl md:text-3xl font-black rounded-2xl transition-all duration-300 flex justify-center items-center ${btnColor} ${animationClass}`}
+                    >
+                      {opt}°
+                      {selectedOption !== null && opt === currentQuestion.correct && (
+                        <Check className="absolute right-3 md:right-4 text-white drop-shadow-md" size={24} />
+                      )}
+                      {selectedOption === opt && opt !== currentQuestion.correct && (
+                        <X className="absolute right-3 md:right-4 text-white drop-shadow-md" size={24} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sonuç Mesajı */}
+              {selectedOption !== null && (
+                <div className={`mt-5 md:mt-6 p-3 md:p-4 rounded-xl text-center font-bold text-base md:text-xl transform transition-all ${isCorrect ? 'bg-emerald-100 text-emerald-700 scale-100' : 'bg-red-100 text-red-700 scale-100'}`}>
+                  {isCorrect ? '✨ Harika! Doğru Cevap.' : '💡 Hatalı Seçim. Doğrusu ekranda işaretlendi.'}
+                </div>
+              )}
+            </div>
+
+            {/* İpucu Yan Paneli */}
+            {showHint ? (
+              <div className="w-full lg:w-72 bg-gradient-to-b from-blue-50 to-white border-2 border-blue-200 rounded-3xl p-5 flex flex-col shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100 rounded-bl-full -z-10"></div>
+                <div className="flex items-center gap-2 text-blue-700 font-black text-lg md:text-xl mb-4">
+                  <Lightbulb size={24} className="text-amber-500" fill="currentColor" />
+                  <span>Kuralı Hatırla!</span>
+                </div>
+                <div className="bg-white p-2 rounded-xl mb-4 shadow-sm border border-blue-100 opacity-90 h-32 md:h-auto flex items-center justify-center">
+                  <currentRule.SvgComponent {...currentRule.introProps} />
+                </div>
+                <div className="bg-blue-600 text-white p-3 rounded-xl text-center font-black text-xl shadow-inner mb-3">
+                  {currentRule.formula}
+                </div>
+                <p className="text-xs md:text-sm text-blue-800/80 font-medium leading-relaxed mt-auto bg-blue-100/50 p-3 rounded-lg">
+                  * Bu ipucu sadece <span className="font-bold text-blue-700">ilk soruda</span> görünür. Sonraki sorularda kuralı zihninden hatırlamalısın!
+                </p>
+              </div>
+            ) : (
+              <div className="hidden lg:flex w-72 bg-slate-100/80 backdrop-blur-sm border-2 border-slate-200 border-dashed rounded-3xl p-6 flex-col items-center justify-center text-center shadow-inner">
+                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                   <Target size={28} className="text-slate-300" />
+                 </div>
+                 <h4 className="font-black text-slate-500 text-lg mb-2">İpucu Gizlendi</h4>
+                 <p className="text-sm text-slate-400 font-medium">Şimdi kuralı zihninden uygulayarak kendini test etme zamanı. Başarabilirsin!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Oyun Bitiş Ekranı */}
+      {gameState === 'finished' && (
+        <div className={`max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 md:p-10 text-center border border-slate-100 transition-all duration-700 ${animateCard ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'}`}>
+          <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-6 md:mb-8">
+            <div className="absolute inset-0 bg-yellow-200 rounded-full animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite] opacity-75"></div>
+            <div className="relative w-full h-full bg-gradient-to-tr from-yellow-300 to-amber-500 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+              <Trophy size={64} className="text-white drop-shadow-md" />
+            </div>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-2 md:mb-3">Tebrikler!</h2>
+          <p className="text-base md:text-lg text-slate-500 font-medium mb-6 md:mb-8">Tüm açı kurallarını başarıyla tamamladın ve harika bir iş çıkardın.</p>
+          
+          <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 md:p-6 mb-6 md:mb-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+            <span className="block text-slate-500 font-bold mb-1 md:mb-2 uppercase tracking-wide text-xs md:text-sm">Kazanılan Puan</span>
+            <span className="text-6xl md:text-7xl font-black text-blue-600 drop-shadow-sm">{score}</span>
+            <span className="text-slate-400 font-medium block mt-2 md:mt-3 text-sm">Maksimum Puan: 250</span>
+          </div>
+
+          <button 
+            onClick={restartGame}
+            className="w-full bg-slate-800 hover:bg-slate-900 text-white text-lg md:text-xl font-bold py-4 md:py-5 px-8 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 hover:-translate-y-1"
+          >
+            <RotateCcw size={24} /> Tekrar Oyna
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+```
